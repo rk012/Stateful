@@ -9,7 +9,7 @@ package com.outoftheboxrobotics.stateful
  */
 open class StateMachine<T>(initialState: State<T>) {
     var currentState = initialState
-        protected set
+        private set
 
     /**
      * Updates the state machine.
