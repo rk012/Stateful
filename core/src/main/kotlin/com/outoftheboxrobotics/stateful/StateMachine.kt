@@ -6,8 +6,13 @@ package com.outoftheboxrobotics.stateful
  * Each state machine holds a [currentState] representing the current [State] of the machine.
  *
  * @param initialState The initial state to start with
+ *
+ * @see LinearStateMachine
  */
 open class StateMachine<T>(initialState: State<T>) {
+    /**
+     * The current [State] that will be run on next update.
+     */
     var currentState = initialState
         private set
 
