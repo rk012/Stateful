@@ -19,7 +19,7 @@ class LinearStateMachine<T>(
     /**
      * Creates copy of the state machine with the current state reset to the initial state.
      */
-    fun createNew() = LinearStateMachine(initialState, endState)
+    internal fun createNew() = LinearStateMachine(initialState, endState)
 
     override fun update() {
         if (isFinished) return
