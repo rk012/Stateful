@@ -14,7 +14,7 @@ open class StateMachine<T>(initialState: State<T>) {
      * The current [State] that will be run on next update.
      */
     var currentState = initialState
-        private set
+        protected set
 
     /**
      * Updates the state machine.

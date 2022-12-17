@@ -7,7 +7,5 @@ import com.outoftheboxrobotics.stateful.builders.StateMachineBuilder
  * code later.
  */
 class StateRef<T> internal constructor(override val value: T) : State<T> {
-    internal var body: (State<T>.() -> State<T>)? = null
-
-    override fun run(): State<T> = body!!()
+    override fun run() = throw IllegalStateException("StateRef body should not be invoked directly")
 }

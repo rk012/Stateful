@@ -69,5 +69,55 @@ class StateMachineTest {
                 s.onRun { this }
             }
         }
+
+        assertThrows<IllegalStateException> {
+            buildStateMachine {
+                createState(Unit).run()
+            }
+        }
+    }
+
+    @Test
+    @Suppress("RemoveExplicitTypeArguments")
+    fun stateMachineMatcherTest() {
+        var s = ""
+
+
+        val fsm = buildStateMachine<Int> {
+            var foo = false
+
+            val a = createState(0)
+            val b = createState(1)
+            val c = createState(2)
+            val d = createState(3)
+
+            where { foo && it.value >= 2 } run {
+                foo = false
+                s += 'a'
+                b
+            }
+
+            where { !foo && it.value >= 2 } run {
+                foo = true
+                s += 'b'
+                d
+            }
+
+            a.onRun {
+                s += 'c'
+                c
+            }
+
+            allStates run {
+                s += 'd'
+                this
+            }
+
+            startingState = a
+        }
+
+        repeat(5) { fsm.update() }
+
+        assertEquals("cbadd", s)
     }
 }

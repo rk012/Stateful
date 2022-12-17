@@ -10,6 +10,7 @@ import com.outoftheboxrobotics.stateful.StateRef
 @StateMachineDsl
 class StateMachineBuilder<T> internal constructor() {
     private val states = mutableListOf<StateRef<T>>()
+    private val matchers = mutableListOf<StateMatchEntry<T>>()
 
     /**
      * Sets the starting state of the [StateMachine].
@@ -25,19 +26,61 @@ class StateMachineBuilder<T> internal constructor() {
 
     /**
      * Adds related code to run when the receiver [State] is active.
+     *
+     * A matcher is generated, so earlier matchers take precedence over later ones.
      */
-    fun StateRef<T>.onRun(block: (@StateMachineDsl State<T>).() -> State<T>) { body = block }
+    fun StateRef<T>.onRun(block: (@StateMachineDsl State<T>).() -> State<T>) {
+        matchers.add(StateMatchEntry(StateMatcher { this == it }, block))
+    }
+
+    /**
+     * Returns a [StateMatcher] that can be used to build custom selectors for adding code to a [State].
+     *
+     * @see run
+     */
+    fun where(predicate: (State<T>) -> Boolean) = StateMatcher(predicate)
+
+    /**
+     * Matcher that matches for all states.
+     */
+    val allStates = StateMatcher<T> { true }
+
+    /**
+     * Adds related code to run when the receiver [StateMatcher] matches the current [State].
+     *
+     * @see where
+     */
+    infix fun StateMatcher<T>.run(block: (@StateMachineDsl State<T>).() -> State<T>) {
+        matchers.add(StateMatchEntry(this, block))
+    }
 
     internal fun build(): StateMachine<T> {
         if (!::startingState.isInitialized) throw IllegalArgumentException("Starting state not set")
 
-        states.forEach {
-            if (it.body == null) throw IllegalArgumentException("State body with ${it.value} not set")
+        states.forEach { s ->
+            if (matchers.none { it.matcher.matcher(s) })
+                throw IllegalArgumentException("State body with ${s.value} not set")
         }
 
-        return StateMachine(startingState)
+        return object : StateMachine<T>(startingState) {
+            override fun update() {
+                matchers.first { it.matcher.matcher(currentState) }.run {
+                    currentState = currentState.body()
+                }
+            }
+        }
     }
 }
+
+/**
+ * Represents a conditional selector for adding code to a [State].
+ *
+ * @see StateMachineBuilder.where
+ */
+@JvmInline
+value class StateMatcher<T> internal constructor(internal val matcher: (State<T>) -> Boolean)
+
+private data class StateMatchEntry<T>(val matcher: StateMatcher<T>, val body: State<T>.() -> State<T>)
 
 /**
  * Dsl for building a [StateMachine].
