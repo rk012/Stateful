@@ -9,6 +9,16 @@ import com.outoftheboxrobotics.stateful.StateRef
  */
 @StateMachineDsl
 class StateMachineBuilder<T> internal constructor() {
+    /**
+     * Represents a conditional selector for adding code to a [State].
+     *
+     * @see StateMachineBuilder.where
+     */
+    @JvmInline
+    value class StateMatcher<T> internal constructor(internal val matcher: (State<T>) -> Boolean)
+
+    private data class StateMatchEntry<T>(val matcher: StateMatcher<T>, val body: State<T>.() -> State<T>)
+
     private val states = mutableListOf<StateRef<T>>()
     private val matchers = mutableListOf<StateMatchEntry<T>>()
 
@@ -71,16 +81,6 @@ class StateMachineBuilder<T> internal constructor() {
         }
     }
 }
-
-/**
- * Represents a conditional selector for adding code to a [State].
- *
- * @see StateMachineBuilder.where
- */
-@JvmInline
-value class StateMatcher<T> internal constructor(internal val matcher: (State<T>) -> Boolean)
-
-private data class StateMatchEntry<T>(val matcher: StateMatcher<T>, val body: State<T>.() -> State<T>)
 
 /**
  * Dsl for building a [StateMachine].
