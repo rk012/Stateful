@@ -14,8 +14,7 @@ class StateMachineBuilder<T> internal constructor() {
      *
      * @see StateMachineBuilder.where
      */
-    @JvmInline
-    value class StateMatcher<T> internal constructor(internal val matcher: (State<T>) -> Boolean)
+    data class StateMatcher<T> internal constructor(internal val matcher: (State<T>) -> Boolean)
 
     private data class StateMatchEntry<T>(val matcher: StateMatcher<T>, val body: State<T>.() -> State<T>)
 
