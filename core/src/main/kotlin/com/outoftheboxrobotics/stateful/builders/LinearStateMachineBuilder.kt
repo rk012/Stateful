@@ -12,6 +12,7 @@ class LinearStateMachineBuilder internal constructor() {
     private sealed interface LinearState
     private data class LinearTask(val task: () -> Unit) : LinearState
     private data class WaitTask(val millis: Long) : LinearState
+    private data class InvokeTask(val stateMachine: LinearStateMachine<*>) : LinearState
 
     private val endState = object : State<Unit> {
         override val value = Unit
@@ -28,10 +29,15 @@ class LinearStateMachineBuilder internal constructor() {
         linearStates.add(WaitTask(millis))
     }
 
+    fun runStateMachine(stateMachine: LinearStateMachine<*>) {
+        linearStates.add(InvokeTask(stateMachine.createNew()))
+    }
+
     internal fun build(): LinearStateMachine<Unit> {
         val state = linearStates.foldRight<_, State<Unit>>(endState) { state, acc ->
             when (state) {
                 is LinearTask -> UnitState { state.task(); acc }
+
                 is WaitTask -> object : UnitState {
                     var start: Long? = null
 
@@ -39,6 +45,12 @@ class LinearStateMachineBuilder internal constructor() {
                         if (System.currentTimeMillis() - start!! > state.millis) acc
                         else this
                     } ?: also { start = System.currentTimeMillis() }
+                }
+
+                is InvokeTask -> object : UnitState {
+                    val s = state.stateMachine
+
+                    override fun run() = if (!s.isFinished) also { s.update() } else acc
                 }
             }
         }
