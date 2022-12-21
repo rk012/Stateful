@@ -80,44 +80,40 @@ class StateMachineTest {
     @Test
     @Suppress("RemoveExplicitTypeArguments")
     fun stateMachineMatcherTest() {
-        var s = ""
+        var str = ""
 
+        var temp = 25
 
-        val fsm = buildStateMachine<Int> {
-            var foo = false
+        buildStateMachine<IntRange> {
+            val s = createState(-100 until 0)
+            val l = createState(0 until 100)
+            val g = createState(100 until 1000)
 
-            val a = createState(0)
-            val b = createState(1)
-            val c = createState(2)
-            val d = createState(3)
-
-            where { foo && it.value >= 2 } run {
-                foo = false
-                s += 'a'
-                b
+            // Solid or gas
+            where { it.value.last < 0 || it.value.first >= 100 } run {
+                if (temp in value) this else l.also { str += "l" }
             }
 
-            where { !foo && it.value >= 2 } run {
-                foo = true
-                s += 'b'
-                d
-            }
-
-            a.onRun {
-                s += 'c'
-                c
-            }
-
+            // Fallback to liquid
             allStates run {
-                s += 'd'
-                this
+                when {
+                    temp in value -> this
+                    temp >= value.last -> g.also { str += 'g' }
+                    else -> s.also { str += 's' }
+                }
             }
 
-            startingState = a
+            startingState = l
+        }.run {
+            update()
+            temp = -2
+            repeat(2) { update() }
+            temp = 106
+            repeat(3) { update() }
+            temp = 72
+            repeat(6) { update() }
         }
 
-        repeat(5) { fsm.update() }
-
-        assertEquals("cbadd", s)
+        assertEquals("slgl", str)
     }
 }

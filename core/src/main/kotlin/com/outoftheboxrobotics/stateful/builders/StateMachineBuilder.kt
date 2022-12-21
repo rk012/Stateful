@@ -67,18 +67,15 @@ class StateMachineBuilder<T> internal constructor() {
     internal fun build(): StateMachine<T> {
         if (!::startingState.isInitialized) throw IllegalArgumentException("Starting state not set")
 
-        states.forEach { s ->
-            if (matchers.none { it.matcher.matcher(s) })
-                throw IllegalArgumentException("State body with ${s.value} not set")
-        }
-
-        return object : StateMachine<T>(startingState) {
-            override fun update() {
-                matchers.first { it.matcher.matcher(currentState) }.run {
-                    currentState = currentState.body()
-                }
+        states.onEach { s ->
+            matchers.firstOrNull { it.matcher.matcher(s) }.let {
+                it ?: throw IllegalArgumentException("State body with ${s.value} not set")
+            }.let {
+                s.body = it.body
             }
         }
+
+        return StateMachine(startingState)
     }
 }
 
