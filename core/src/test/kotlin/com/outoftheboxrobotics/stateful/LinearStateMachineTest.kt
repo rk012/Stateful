@@ -4,7 +4,6 @@ import com.outoftheboxrobotics.stateful.builders.buildLinearStateMachine
 import kotlin.system.measureTimeMillis
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class LinearStateMachineTest {
@@ -23,7 +22,7 @@ class LinearStateMachineTest {
         val t = measureTimeMillis {
             val start = System.currentTimeMillis()
 
-            while (System.currentTimeMillis() - start < 400 && !fsm.isFinished) fsm.update()
+            while (System.currentTimeMillis() - start < 500 && !fsm.isFinished) fsm.update()
         }
 
         assertEquals("123", s)
@@ -33,10 +32,13 @@ class LinearStateMachineTest {
             runStateMachine(fsm)
         }
 
-        fsm2.update()
+        val t2 = measureTimeMillis {
+            val start = System.currentTimeMillis()
 
-        assertTrue(fsm.isFinished)
-        assertFalse(fsm2.isFinished)
-        assertEquals("1231", s)
+            while (System.currentTimeMillis() - start < 500 && !fsm2.isFinished) fsm2.update()
+        }
+
+        assertTrue(t2 in 200..400)
+        assertEquals("123123", s)
     }
 }

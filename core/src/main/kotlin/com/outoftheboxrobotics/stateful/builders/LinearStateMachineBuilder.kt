@@ -21,14 +21,25 @@ class LinearStateMachineBuilder internal constructor() {
 
     private val linearStates = mutableListOf<LinearState>()
 
+    /**
+     * Runs the enclosed lambda as a state.
+     */
     fun task(block: () -> Unit) {
         linearStates.add(LinearTask(block))
     }
 
+    /**
+     * State that waits for the specified amount of time before continuing.
+     *
+     * Note: this is not safe to use in multiple copies of the same state machine running at the same time.
+     */
     fun waitMillis(millis: Long) {
         linearStates.add(WaitTask(millis))
     }
 
+    /**
+     * Runs the given state machine until completion as a state.
+     */
     fun runStateMachine(stateMachine: LinearStateMachine<*>) {
         linearStates.add(InvokeTask(stateMachine.createNew()))
     }
@@ -42,7 +53,7 @@ class LinearStateMachineBuilder internal constructor() {
                     var start: Long? = null
 
                     override fun run() = start?.let {
-                        if (System.currentTimeMillis() - start!! > state.millis) acc
+                        if (System.currentTimeMillis() - start!! > state.millis) acc.also { start = null }
                         else this
                     } ?: also { start = System.currentTimeMillis() }
                 }
