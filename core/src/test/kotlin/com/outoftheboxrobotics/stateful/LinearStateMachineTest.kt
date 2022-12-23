@@ -73,4 +73,42 @@ class LinearStateMachineTest {
         repeat(10) { fsm3.update() }
         assertEquals(6, c)
     }
+
+    @Test
+    fun conditionalTest() {
+        // Conditionals and loops may take multiple updates to complete
+        val n = 5
+
+        var foo: Boolean? = null
+        var bar: Boolean? = true
+
+        buildLinearStateMachine {
+            loopWhile({ true }) {
+                runIf({ foo == true }) {
+                    task { bar = true }
+                }.elif({ foo == false }) {
+                    task { bar = false }
+                } elseRun {
+                    task { bar = null }
+                }
+            }
+        }.run {
+            repeat(n) { update() }
+            assertEquals(null, bar)
+
+            foo = true
+            repeat(n) { update() }
+            assertEquals(true, bar)
+
+            foo = false
+            repeat(n) { update() }
+            assertEquals(false, bar)
+
+            foo = null
+            createNew().let { fsm ->
+                repeat(n) { fsm.update() }
+                assertEquals(null, bar)
+            }
+        }
+    }
 }

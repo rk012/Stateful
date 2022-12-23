@@ -18,6 +18,18 @@ class LinearStateMachineBuilder internal constructor() {
         val task: LinearStateMachineBuilder.() -> Unit
     ) : LinearState
 
+    class ConditionalTask internal constructor(
+        internal val conditions: MutableList<Pair<() -> Boolean, LinearStateMachine<Unit>>> = mutableListOf()
+    ) : LinearState {
+        fun elif(condition: () -> Boolean, block: (@StateMachineDsl LinearStateMachineBuilder).() -> Unit) = apply {
+            conditions.add(condition to buildLinearStateMachine(block))
+        }
+
+        infix fun elseRun(block: (@StateMachineDsl LinearStateMachineBuilder).() -> Unit) {
+            conditions.add({ true } to buildLinearStateMachine(block))
+        }
+    }
+
     private val endState = object : State<Unit> {
         override val value = Unit
         override fun run() = this
@@ -53,6 +65,11 @@ class LinearStateMachineBuilder internal constructor() {
         linearStates.add(LoopTask(condition, body))
     }
 
+    fun runIf(condition: () -> Boolean, block: (@StateMachineDsl LinearStateMachineBuilder).() -> Unit) =
+        ConditionalTask(mutableListOf(condition to buildLinearStateMachine(block))).also {
+            linearStates.add(it)
+        }
+
     internal fun build(): LinearStateMachine<Unit> {
         val state = linearStates.foldRight<_, State<Unit>>(endState) { state, acc ->
             when (state) {
@@ -77,19 +94,35 @@ class LinearStateMachineBuilder internal constructor() {
                     var isStarted = false
                     var s = buildLinearStateMachine(state.task)
 
-                    override fun run() =
-                        if (!isStarted && !state.condition()) acc
-                        else when {
-                            !s.isFinished -> also { s.update() }
-                            state.condition() -> {
-                                s = s.createNew()
-                                also { s.update() }
-                            }
-                            else -> {
-                                s = s.createNew()
-                                acc
-                            }
+                    override fun run() = when {
+                        !isStarted && !state.condition() -> acc
+                        !s.isFinished -> also { s.update() }
+                        state.condition() -> {
+                            s = s.createNew()
+                            also { s.update() }
                         }
+                        else -> {
+                            s = s.createNew()
+                            acc
+                        }
+                    }
+                }
+
+                is ConditionalTask -> object : UnitState {
+                    var branches = state.conditions.toList()
+                    var s: LinearStateMachine<Unit>? = null
+
+                    override fun run(): State<Unit> {
+                        s ?: (
+                                branches.firstOrNull { (cond, _) -> cond() }?.let { (_, l) -> s = l.createNew() }
+                                ?: return acc.also { s = null }
+                            )
+
+                        return s!!.let { lsm ->
+                            if (!lsm.isFinished) also { lsm.update() }
+                            else acc.also { s = null }
+                        }
+                    }
                 }
             }
         }
