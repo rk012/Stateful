@@ -1,4 +1,6 @@
-package com.outoftheboxrobotics.stateful
+package com.outoftheboxrobotics.stateful.statemachines
+
+import com.outoftheboxrobotics.stateful.states.State
 
 /**
  * Represents a Finite State Machine.

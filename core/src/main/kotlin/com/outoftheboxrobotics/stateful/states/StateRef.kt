@@ -1,4 +1,4 @@
-package com.outoftheboxrobotics.stateful
+package com.outoftheboxrobotics.stateful.states
 
 import com.outoftheboxrobotics.stateful.builders.StateMachineBuilder
 

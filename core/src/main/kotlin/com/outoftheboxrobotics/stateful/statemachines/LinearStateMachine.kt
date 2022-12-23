@@ -1,4 +1,6 @@
-package com.outoftheboxrobotics.stateful
+package com.outoftheboxrobotics.stateful.statemachines
+
+import com.outoftheboxrobotics.stateful.states.State
 
 /**
  * Represents a [StateMachine] that has a beginning and end [State].

@@ -1,8 +1,8 @@
 package com.outoftheboxrobotics.stateful.builders
 
-import com.outoftheboxrobotics.stateful.State
-import com.outoftheboxrobotics.stateful.StateMachine
-import com.outoftheboxrobotics.stateful.StateRef
+import com.outoftheboxrobotics.stateful.states.State
+import com.outoftheboxrobotics.stateful.statemachines.StateMachine
+import com.outoftheboxrobotics.stateful.states.StateRef
 
 /**
  * Dsl builder for creating a [StateMachine].

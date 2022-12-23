@@ -1,6 +1,7 @@
 package com.outoftheboxrobotics.stateful
 
 import com.outoftheboxrobotics.stateful.builders.buildStateMachine
+import com.outoftheboxrobotics.stateful.states.plus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

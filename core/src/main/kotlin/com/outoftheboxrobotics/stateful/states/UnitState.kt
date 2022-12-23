@@ -1,4 +1,4 @@
-package com.outoftheboxrobotics.stateful
+package com.outoftheboxrobotics.stateful.states
 
 /**
  * Convenience SAM interface for states that have no data associated with them.
