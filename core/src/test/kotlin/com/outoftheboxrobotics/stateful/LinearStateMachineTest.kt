@@ -41,4 +41,36 @@ class LinearStateMachineTest {
         assertTrue(t2 in 200..400)
         assertEquals("123123", s)
     }
+
+    @Test
+    fun loopTest() {
+        var i = 0
+        var c = 0
+
+        val fsm = buildLinearStateMachine {
+            loopWhile({ i < 3 }) {
+                task { c++ }
+                task { i++ }
+            }
+        }
+
+        repeat(10) { fsm.update() }
+        assertEquals(3, c)
+
+        val fsm2 = fsm.createNew()
+        i = 0
+
+        repeat(10) { fsm2.update() }
+        assertEquals(6, c)
+
+        // Should check while condition first
+        val fsm3 = buildLinearStateMachine {
+            loopWhile({ false }) {
+                task { c++ }
+            }
+        }
+
+        repeat(10) { fsm3.update() }
+        assertEquals(6, c)
+    }
 }

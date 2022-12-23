@@ -13,6 +13,10 @@ class LinearStateMachineBuilder internal constructor() {
     private data class LinearTask(val task: () -> Unit) : LinearState
     private data class WaitTask(val millis: Long) : LinearState
     private data class InvokeTask(val stateMachine: LinearStateMachine<*>) : LinearState
+    private data class LoopTask(
+        val condition: () -> Boolean,
+        val task: LinearStateMachineBuilder.() -> Unit
+    ) : LinearState
 
     private val endState = object : State<Unit> {
         override val value = Unit
@@ -30,8 +34,6 @@ class LinearStateMachineBuilder internal constructor() {
 
     /**
      * State that waits for the specified amount of time before continuing.
-     *
-     * Note: this is not safe to use in multiple copies of the same state machine running at the same time.
      */
     fun waitMillis(millis: Long) {
         linearStates.add(WaitTask(millis))
@@ -42,6 +44,13 @@ class LinearStateMachineBuilder internal constructor() {
      */
     fun runStateMachine(stateMachine: LinearStateMachine<*>) {
         linearStates.add(InvokeTask(stateMachine.createNew()))
+    }
+
+    /**
+     * State that loops while the condition is true.
+     */
+    fun loopWhile(condition: () -> Boolean, body: (@StateMachineDsl LinearStateMachineBuilder).() -> Unit) {
+        linearStates.add(LoopTask(condition, body))
     }
 
     internal fun build(): LinearStateMachine<Unit> {
@@ -62,6 +71,25 @@ class LinearStateMachineBuilder internal constructor() {
                     val s = state.stateMachine
 
                     override fun run() = if (!s.isFinished) also { s.update() } else acc
+                }
+
+                is LoopTask -> object : UnitState {
+                    var isStarted = false
+                    var s = buildLinearStateMachine(state.task)
+
+                    override fun run() =
+                        if (!isStarted && !state.condition()) acc
+                        else when {
+                            !s.isFinished -> also { s.update() }
+                            state.condition() -> {
+                                s = s.createNew()
+                                also { s.update() }
+                            }
+                            else -> {
+                                s = s.createNew()
+                                acc
+                            }
+                        }
                 }
             }
         }
