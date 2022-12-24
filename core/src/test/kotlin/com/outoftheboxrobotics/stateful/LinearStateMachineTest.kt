@@ -150,4 +150,45 @@ class LinearStateMachineTest {
         assertEquals(2, i)
         assertTrue(t in 50..150)
     }
+
+    @Test
+    fun updateCountTest() {
+        var i = 0
+
+        buildLinearStateMachine {
+            task { i++}
+
+            runStateMachine(buildLinearStateMachine {
+                task { i++ }
+            })
+            task { i++}
+
+            runIf({ false }) {
+                task { i++ }
+            }.elif({ true }) {
+                task { i++ }
+            } elseRun {
+                task { i++ }
+            }
+
+            task { i++ }
+
+            runIf({ false }) {
+                task { i++ }
+            }.elif({ false }) {
+                task { i++ }
+            }
+
+            task { i++ }
+            task { i++ }
+        }.run {
+            repeat(7) {
+                update()
+            }
+            // Lags behind by one due to second if statement
+            assertEquals(6, i)
+            update()
+            assertEquals(7, i)
+        }
+    }
 }

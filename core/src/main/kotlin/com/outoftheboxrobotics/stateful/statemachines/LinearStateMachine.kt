@@ -26,7 +26,10 @@ class LinearStateMachine<T>(
     override fun update() {
         if (isFinished) return
 
-        if (currentState == endState) isFinished = true
         super.update()
+        if (currentState == endState) {
+            isFinished = true
+            super.update()
+        }
     }
 }

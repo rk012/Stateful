@@ -91,10 +91,9 @@ class LinearStateMachineBuilder internal constructor() {
                         !isStarted -> {
                             isStarted = true
                             s = s.createNew()
-                            this
+                            updateStateMachine(s, acc)
                         }
-                        !s.isFinished -> also { s.update() }
-                        else -> acc
+                        else -> updateStateMachine(s, acc)
                     }
                 }
 
@@ -115,9 +114,7 @@ class LinearStateMachineBuilder internal constructor() {
                             s = s.createNew()
                             also { s.update() }
                         }
-                        else -> {
-                            acc
-                        }
+                        else -> acc
                     }
                 }
 
@@ -131,10 +128,7 @@ class LinearStateMachineBuilder internal constructor() {
                                 ?: return acc
                             )
 
-                        return s!!.let { lsm ->
-                            if (!lsm.isFinished) also { lsm.update() }
-                            else acc
-                        }
+                        return updateStateMachine(s!!, acc)
                     }
                 }
             }
@@ -144,9 +138,16 @@ class LinearStateMachineBuilder internal constructor() {
     }
 }
 
-internal fun unitState(block: () -> State<Unit>) = object : UnitState() {
+private fun unitState(block: () -> State<Unit>) = object : UnitState() {
     override fun run() = block()
 }
+
+private fun State<Unit>.updateStateMachine(targetStateMachine: LinearStateMachine<*>, nextState: State<Unit>) =
+    targetStateMachine.also {
+        it.update()
+    }.let {
+        if (it.isFinished) nextState else this
+    }
 
 /**
  * Dsl for building a [LinearStateMachine].
