@@ -10,13 +10,13 @@ import com.outoftheboxrobotics.stateful.statemachines.StateMachine
  *
  * @see StateRef
  */
-interface State<out T> {
-    val value: T
+abstract class State<out T> {
+    abstract val value: T
 
     /**
      * Runs whatever code is associated with this state.
      *
      * @return The next state to go to (can be the same one).
      */
-    fun run(): State<T>
+    abstract fun run(): State<T>
 }

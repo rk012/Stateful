@@ -30,8 +30,7 @@ class LinearStateMachineBuilder internal constructor() {
         }
     }
 
-    private val endState = object : State<Unit> {
-        override val value = Unit
+    private val endState = object : UnitState() {
         override fun run() = this
     }
 
@@ -73,9 +72,9 @@ class LinearStateMachineBuilder internal constructor() {
     internal fun build(): LinearStateMachine<Unit> {
         val state = linearStates.foldRight<_, State<Unit>>(endState) { state, acc ->
             when (state) {
-                is LinearTask -> UnitState { state.task(); acc }
+                is LinearTask -> unitState { state.task(); acc }
 
-                is WaitTask -> object : UnitState {
+                is WaitTask -> object : UnitState() {
                     var start: Long? = null
 
                     override fun run() = start?.let {
@@ -84,13 +83,13 @@ class LinearStateMachineBuilder internal constructor() {
                     } ?: also { start = System.currentTimeMillis() }
                 }
 
-                is InvokeTask -> object : UnitState {
+                is InvokeTask -> object : UnitState() {
                     val s = state.stateMachine
 
                     override fun run() = if (!s.isFinished) also { s.update() } else acc
                 }
 
-                is LoopTask -> object : UnitState {
+                is LoopTask -> object : UnitState() {
                     var isStarted = false
                     var s = buildLinearStateMachine(state.task)
 
@@ -108,7 +107,7 @@ class LinearStateMachineBuilder internal constructor() {
                     }
                 }
 
-                is ConditionalTask -> object : UnitState {
+                is ConditionalTask -> object : UnitState() {
                     var branches = state.conditions.toList()
                     var s: LinearStateMachine<Unit>? = null
 
@@ -129,6 +128,10 @@ class LinearStateMachineBuilder internal constructor() {
 
         return LinearStateMachine(state, endState)
     }
+}
+
+internal fun unitState(block: () -> State<Unit>) = object : UnitState() {
+    override fun run() = block()
 }
 
 /**
