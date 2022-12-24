@@ -15,7 +15,7 @@ class LinearStateMachineBuilder internal constructor() {
     private data class InvokeTask(val stateMachine: LinearStateMachine<*>) : LinearState
     private data class LoopTask(
         val condition: () -> Boolean,
-        val task: LinearStateMachineBuilder.() -> Unit
+        val task: LinearStateMachine<Unit>
     ) : LinearState
 
     class ConditionalTask internal constructor(
@@ -61,7 +61,7 @@ class LinearStateMachineBuilder internal constructor() {
      * State that loops while the condition is true.
      */
     fun loopWhile(condition: () -> Boolean, body: (@StateMachineDsl LinearStateMachineBuilder).() -> Unit) {
-        linearStates.add(LoopTask(condition, body))
+        linearStates.add(LoopTask(condition, buildLinearStateMachine(body)))
     }
 
     fun runIf(condition: () -> Boolean, block: (@StateMachineDsl LinearStateMachineBuilder).() -> Unit) =
@@ -75,51 +75,65 @@ class LinearStateMachineBuilder internal constructor() {
                 is LinearTask -> unitState { state.task(); acc }
 
                 is WaitTask -> object : UnitState() {
-                    var start: Long? = null
+                    var start: Long? by stateVar(null)
 
                     override fun run() = start?.let {
-                        if (System.currentTimeMillis() - start!! > state.millis) acc.also { start = null }
+                        if (System.currentTimeMillis() - it > state.millis) acc
                         else this
                     } ?: also { start = System.currentTimeMillis() }
                 }
 
                 is InvokeTask -> object : UnitState() {
-                    val s = state.stateMachine
+                    var s by stateVar(state.stateMachine)
+                    var isStarted by stateVar(false)
 
-                    override fun run() = if (!s.isFinished) also { s.update() } else acc
+                    override fun run() = when {
+                        !isStarted -> {
+                            isStarted = true
+                            s = s.createNew()
+                            this
+                        }
+                        !s.isFinished -> also { s.update() }
+                        else -> acc
+                    }
                 }
 
                 is LoopTask -> object : UnitState() {
-                    var isStarted = false
-                    var s = buildLinearStateMachine(state.task)
+                    var isRunning by stateVar(false)
+                    var s by stateVar(state.task)
 
                     override fun run() = when {
-                        !isStarted && !state.condition() -> acc
-                        !s.isFinished -> also { s.update() }
+                        !isRunning && !state.condition() -> acc
+                        !s.isFinished -> also {
+                            if (!isRunning) {
+                                s = s.createNew()
+                                isRunning = true
+                            }
+                            s.update()
+                        }
                         state.condition() -> {
                             s = s.createNew()
                             also { s.update() }
                         }
                         else -> {
-                            s = s.createNew()
                             acc
                         }
                     }
                 }
 
                 is ConditionalTask -> object : UnitState() {
-                    var branches = state.conditions.toList()
-                    var s: LinearStateMachine<Unit>? = null
+                    val branches = state.conditions.toList()
+                    var s: LinearStateMachine<Unit>? by stateVar(null)
 
                     override fun run(): State<Unit> {
                         s ?: (
                                 branches.firstOrNull { (cond, _) -> cond() }?.let { (_, l) -> s = l.createNew() }
-                                ?: return acc.also { s = null }
+                                ?: return acc
                             )
 
                         return s!!.let { lsm ->
                             if (!lsm.isFinished) also { lsm.update() }
-                            else acc.also { s = null }
+                            else acc
                         }
                     }
                 }

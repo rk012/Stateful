@@ -25,6 +25,7 @@ open class StateMachine<T>(initialState: State<T>) {
      * state.
      */
     open fun update() {
+        currentState.activeStateMachine = this
         currentState = currentState.run()
     }
 }

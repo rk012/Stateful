@@ -43,6 +43,21 @@ class LinearStateMachineTest {
     }
 
     @Test
+    fun loopInvokeTest() {
+        var c = 0
+        buildLinearStateMachine {
+            loopWhile({ c < 3 }) {
+                runStateMachine(buildLinearStateMachine {
+                    task { c++ }
+                })
+            }
+        }.run {
+            while (!isFinished) { update() }
+            assertEquals(3, c)
+        }
+    }
+
+    @Test
     fun loopTest() {
         var i = 0
         var c = 0
@@ -110,5 +125,29 @@ class LinearStateMachineTest {
                 assertEquals(null, bar)
             }
         }
+    }
+
+    @Test
+    fun concurrentLocalVarTest() {
+        var i = 0
+
+        val fsm = buildLinearStateMachine {
+            waitMillis(100)
+            task { i++ }
+        }
+
+        val fsm2 = fsm.createNew()
+
+        val t = measureTimeMillis {
+            val start = System.currentTimeMillis()
+
+            while (System.currentTimeMillis() - start < 200 && !fsm.isFinished && !fsm2.isFinished) {
+                fsm.update()
+                fsm2.update()
+            }
+        }
+
+        assertEquals(2, i)
+        assertTrue(t in 50..150)
     }
 }

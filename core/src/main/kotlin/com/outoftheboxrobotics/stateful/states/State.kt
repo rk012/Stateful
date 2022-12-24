@@ -1,6 +1,8 @@
 package com.outoftheboxrobotics.stateful.states
 
 import com.outoftheboxrobotics.stateful.statemachines.StateMachine
+import kotlin.properties.ReadWriteProperty
+import kotlin.reflect.KProperty
 
 /**
  * Represents an individual state in a [StateMachine].
@@ -11,6 +13,8 @@ import com.outoftheboxrobotics.stateful.statemachines.StateMachine
  * @see StateRef
  */
 abstract class State<out T> {
+    internal var activeStateMachine: StateMachine<*>? = null
+
     abstract val value: T
 
     /**
@@ -19,4 +23,25 @@ abstract class State<out T> {
      * @return The next state to go to (can be the same one).
      */
     abstract fun run(): State<T>
+
+    /**
+     * Delegate for creating Statemachine-local variables.
+     */
+    class StateVar<R> internal constructor(private val default: R) : ReadWriteProperty<State<*>, R> {
+        private val stateVars = mutableMapOf<StateMachine<*>?, R>()
+
+        override fun getValue(thisRef: State<*>, property: KProperty<*>) =
+            stateVars.getOrDefault(thisRef.activeStateMachine, default)
+
+        override fun setValue(thisRef: State<*>, property: KProperty<*>, value: R) {
+            stateVars[thisRef.activeStateMachine] = value
+        }
+    }
+
+    /**
+     * Creates a [StateVar] that can be used to create state machine-local variables.
+     *
+     * @param default The default value of the variable.
+     */
+    protected fun <R> stateVar(default: R) = StateVar(default)
 }
