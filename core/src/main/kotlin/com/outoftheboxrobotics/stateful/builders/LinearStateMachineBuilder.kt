@@ -22,6 +22,9 @@ class LinearStateMachineBuilder internal constructor() {
         val action: () -> Unit
     ) : LinearState
 
+    /**
+     * Builders for constructing if statements in the linear state machine builder.
+     */
     class ConditionalTask internal constructor(
         internal val conditions: MutableList<Pair<() -> Boolean, LinearStateMachine<Unit>>> = mutableListOf()
     ) : LinearState {
@@ -75,6 +78,9 @@ class LinearStateMachineBuilder internal constructor() {
         linearStates.add(SingleLoopTask(condition, body))
     }
 
+    /**
+     * State builder for conditional execution (if statements).
+     */
     fun runIf(condition: () -> Boolean, block: (@StateMachineDsl LinearStateMachineBuilder).() -> Unit) =
         ConditionalTask(mutableListOf(condition to buildLinearStateMachine(block))).also {
             linearStates.add(it)
