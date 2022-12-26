@@ -17,6 +17,10 @@ class LinearStateMachineBuilder internal constructor() {
         val condition: () -> Boolean,
         val task: LinearStateMachine<Unit>
     ) : LinearState
+    private data class SingleLoopTask(
+        val condition: () -> Boolean,
+        val action: () -> Unit
+    ) : LinearState
 
     class ConditionalTask internal constructor(
         internal val conditions: MutableList<Pair<() -> Boolean, LinearStateMachine<Unit>>> = mutableListOf()
@@ -62,6 +66,13 @@ class LinearStateMachineBuilder internal constructor() {
      */
     fun loopWhile(condition: () -> Boolean, body: (@StateMachineDsl LinearStateMachineBuilder).() -> Unit) {
         linearStates.add(LoopTask(condition, buildLinearStateMachine(body)))
+    }
+
+    /**
+     * Optimized loop state builder for repeating a single task that runs on every update.
+     */
+    fun loopTaskWhile(condition: () -> Boolean, body: () -> Unit) {
+        linearStates.add(SingleLoopTask(condition, body))
     }
 
     fun runIf(condition: () -> Boolean, block: (@StateMachineDsl LinearStateMachineBuilder).() -> Unit) =
@@ -118,6 +129,11 @@ class LinearStateMachineBuilder internal constructor() {
                     }
                 }
 
+                is SingleLoopTask -> unitState {
+                    if (state.condition()) also { state.action() }
+                    else acc
+                }
+
                 is ConditionalTask -> object : UnitState() {
                     val branches = state.conditions.toList()
                     var s: LinearStateMachine<Unit>? by stateVar(null)
@@ -138,7 +154,7 @@ class LinearStateMachineBuilder internal constructor() {
     }
 }
 
-private fun unitState(block: () -> State<Unit>) = object : UnitState() {
+private fun unitState(block: State<Unit>.() -> State<Unit>) = object : UnitState() {
     override fun run() = block()
 }
 

@@ -154,6 +154,7 @@ class LinearStateMachineTest {
     @Test
     fun updateCountTest() {
         var i = 0
+        var j = 0
 
         buildLinearStateMachine {
             task { i++}
@@ -179,16 +180,21 @@ class LinearStateMachineTest {
                 task { i++ }
             }
 
+            loopTaskWhile({ j < 3 }) {
+                i++
+                j++
+            }
+
             task { i++ }
             task { i++ }
         }.run {
-            repeat(7) {
+            repeat(11) {
                 update()
             }
-            // Lags behind by one due to second if statement
-            assertEquals(6, i)
+            // Lags behind by two due to second if statement and loop end
+            assertEquals(9, i)
             update()
-            assertEquals(7, i)
+            assertEquals(10, i)
         }
     }
 }
