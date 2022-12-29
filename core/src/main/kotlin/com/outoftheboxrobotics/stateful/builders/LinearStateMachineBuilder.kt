@@ -1,5 +1,6 @@
 package com.outoftheboxrobotics.stateful.builders
 
+import com.outoftheboxrobotics.stateful.concurrent.Awaitable
 import com.outoftheboxrobotics.stateful.statemachines.LinearStateMachine
 import com.outoftheboxrobotics.stateful.states.State
 import com.outoftheboxrobotics.stateful.states.StateDataHandler
@@ -37,6 +38,8 @@ class LinearStateMachineBuilder internal constructor() {
             conditions.add({ true } to buildLinearStateMachine(block))
         }
     }
+
+    private data class LaunchTask(val stateMachine: LinearStateMachine<*>) : LinearState
 
     private val endState = object : UnitState() {
         override fun run() = also {
@@ -88,6 +91,13 @@ class LinearStateMachineBuilder internal constructor() {
         ConditionalTask(mutableListOf(condition to buildLinearStateMachine(block))).also {
             linearStates.add(it)
         }
+
+    /**
+     * Launches the given state machine in parallel with the current state machine.
+     */
+    fun launch(stateMachine: LinearStateMachine<*>): Awaitable = stateMachine.createNew().also {
+        linearStates.add(LaunchTask(it))
+    }
 
     internal fun build(): LinearStateMachine<Unit> {
         val state = linearStates.foldRight<_, State<Unit>>(endState) { state, acc ->
@@ -155,6 +165,11 @@ class LinearStateMachineBuilder internal constructor() {
 
                         return updateStateMachine(s!!, acc)
                     }
+                }
+
+                is LaunchTask -> unitState {
+                    (activeStateMachine as? LinearStateMachine)?.ticker?.launchJob(state.stateMachine)
+                    acc
                 }
             }
         }

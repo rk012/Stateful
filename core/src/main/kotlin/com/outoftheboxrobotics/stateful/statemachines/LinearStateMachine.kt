@@ -22,7 +22,7 @@ class LinearStateMachine<T>(
 
     private var endStateRun = false
 
-    private val ticker = Ticker()
+    internal val ticker = Ticker()
 
     /**
      * Creates copy of the state machine with the current state reset to the initial state.
@@ -32,8 +32,8 @@ class LinearStateMachine<T>(
     override fun update() {
         if (isFinished) return
 
-        ticker.updateJob()
         super.update()
+        ticker.updateJob()
 
         if (currentState == endState) {
             isFinished = ticker.isFinished

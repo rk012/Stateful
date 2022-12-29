@@ -136,18 +136,17 @@ class LinearStateMachineTest {
             task { i++ }
         }
 
-        val fsm2 = fsm.createNew()
+        val machines = List(100) { fsm.createNew() }
 
         val t = measureTimeMillis {
             val start = System.currentTimeMillis()
 
-            while (System.currentTimeMillis() - start < 200 && !fsm.isFinished && !fsm2.isFinished) {
-                fsm.update()
-                fsm2.update()
+            while (System.currentTimeMillis() - start < 200 && machines.any { !it.isFinished }) {
+                machines.forEach { it.update() }
             }
         }
 
-        assertEquals(2, i)
+        assertEquals(100, i)
         assertTrue(t in 50..150)
     }
 
