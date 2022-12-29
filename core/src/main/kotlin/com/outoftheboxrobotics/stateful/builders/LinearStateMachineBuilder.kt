@@ -2,6 +2,7 @@ package com.outoftheboxrobotics.stateful.builders
 
 import com.outoftheboxrobotics.stateful.statemachines.LinearStateMachine
 import com.outoftheboxrobotics.stateful.states.State
+import com.outoftheboxrobotics.stateful.states.StateDataHandler
 import com.outoftheboxrobotics.stateful.states.UnitState
 
 /**
@@ -38,7 +39,9 @@ class LinearStateMachineBuilder internal constructor() {
     }
 
     private val endState = object : UnitState() {
-        override fun run() = this
+        override fun run() = also {
+            activeStateMachine?.let { StateDataHandler.clearData(it) }
+        }
     }
 
     private val linearStates = mutableListOf<LinearState>()

@@ -34,8 +34,11 @@ abstract class State<out T> {
             stateVars.getOrDefault(thisRef.activeStateMachine, default)
 
         override fun setValue(thisRef: State<*>, property: KProperty<*>, value: R) {
+            thisRef.activeStateMachine?.let { StateDataHandler.addStateVar(it, this) }
             stateVars[thisRef.activeStateMachine] = value
         }
+        
+        fun clearData(s: StateMachine<*>) = stateVars.remove(s)
     }
 
     /**
