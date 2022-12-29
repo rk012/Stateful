@@ -1,5 +1,6 @@
 package com.outoftheboxrobotics.stateful.statemachines
 
+import com.outoftheboxrobotics.stateful.concurrent.Job
 import com.outoftheboxrobotics.stateful.states.State
 
 /**
@@ -11,11 +12,11 @@ import com.outoftheboxrobotics.stateful.states.State
 class LinearStateMachine<T>(
     private val initialState: State<T>,
     private val endState: State<T>
-) : StateMachine<T>(initialState) {
+) : StateMachine<T>(initialState), Job {
     /**
      * Whether the State Machine has reached the end state.
      */
-    var isFinished = false
+    override var isFinished = false
         private set
 
     /**
@@ -32,4 +33,6 @@ class LinearStateMachine<T>(
             super.update()
         }
     }
+
+    override fun updateJob() = update()
 }
