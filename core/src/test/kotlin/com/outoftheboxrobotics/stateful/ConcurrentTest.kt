@@ -9,14 +9,14 @@ class ConcurrentTest {
     fun launchScopeTest() {
         var s = ""
         buildLinearStateMachine {
-            runStateMachine(buildLinearStateMachine {
+            scope {
                 launch(buildLinearStateMachine {
                     waitMillis(50)
                     task { s += "2" }
                 })
 
                 task { s += "1" }
-            })
+            }
 
             task { s += "3" }
 
@@ -27,6 +27,28 @@ class ConcurrentTest {
         }.run {
             while (!isFinished) { update() }
             assertEquals("1234", s)
+        }
+    }
+
+    @Test
+    fun asyncTest() {
+        var s = ""
+
+        buildLinearStateMachine {
+            val a = launch {
+                waitMillis(100)
+                task { s += "2" }
+            }
+            waitMillis(50)
+            launch {
+                waitMillis(20)
+                task { s += "1" }
+            }
+            await(a)
+            task { s += "3" }
+        }.run {
+            while (!isFinished) { update() }
+            assertEquals("123", s)
         }
     }
 }

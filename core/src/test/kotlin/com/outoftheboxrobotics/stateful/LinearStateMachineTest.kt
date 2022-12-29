@@ -43,6 +43,27 @@ class LinearStateMachineTest {
     }
 
     @Test
+    fun waitUntilTest() {
+        var a = false
+        var s = ""
+
+        buildLinearStateMachine {
+            task { s += '1' }
+            waitUntil { a }
+            task { s += '2' }
+        }.run {
+            update()
+            assertEquals("1", s)
+            update()
+            assertEquals("1", s)
+            a = true
+            update()
+            update()
+            assertEquals("12", s)
+        }
+    }
+
+    @Test
     fun loopInvokeTest() {
         var c = 0
         buildLinearStateMachine {

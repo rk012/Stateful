@@ -14,6 +14,7 @@ class LinearStateMachineBuilder internal constructor() {
     private sealed interface LinearState
     private data class LinearTask(val task: () -> Unit) : LinearState
     private data class WaitTask(val millis: Long) : LinearState
+    private data class WaitUntilTask(val handler: () -> Boolean) : LinearState
     private data class InvokeTask(val stateMachine: LinearStateMachine<*>) : LinearState
     private data class LoopTask(
         val condition: () -> Boolean,
@@ -64,10 +65,26 @@ class LinearStateMachineBuilder internal constructor() {
     }
 
     /**
+     * State that waits until the specified condition is true before continuing.
+     */
+    fun waitUntil(condition: () -> Boolean) {
+        linearStates.add(WaitUntilTask(condition))
+    }
+
+    /**
      * Runs the given state machine until completion as a state.
      */
     fun runStateMachine(stateMachine: LinearStateMachine<*>) {
         linearStates.add(InvokeTask(stateMachine.createNew()))
+    }
+
+    /**
+     * Shorthand for `runStateMachine(buildLinearStateMachine {...})`
+     *
+     * Useful for defining async scopes for structured concurrency.
+     */
+    fun scope(block: (@StateMachineDsl LinearStateMachineBuilder).() -> Unit) {
+        linearStates.add(InvokeTask(buildLinearStateMachine(block)))
     }
 
     /**
@@ -99,6 +116,21 @@ class LinearStateMachineBuilder internal constructor() {
         linearStates.add(LaunchTask(it))
     }
 
+    /**
+     * Shorthand for `launch(buildLinearStateMachine {...})`
+     */
+    fun launch(block: (@StateMachineDsl LinearStateMachineBuilder).() -> Unit): Awaitable =
+        buildLinearStateMachine(block).also {
+            linearStates.add(LaunchTask(it))
+        }
+
+    /**
+     * Waits for the given awaitable to finish before continuing.
+     */
+    fun await(awaitable: Awaitable) {
+        linearStates.add(WaitUntilTask { awaitable.isFinished })
+    }
+
     internal fun build(): LinearStateMachine<Unit> {
         val state = linearStates.foldRight<_, State<Unit>>(endState) { state, acc ->
             when (state) {
@@ -111,6 +143,10 @@ class LinearStateMachineBuilder internal constructor() {
                         if (System.currentTimeMillis() - it > state.millis) acc
                         else this
                     } ?: also { start = System.currentTimeMillis() }
+                }
+
+                is WaitUntilTask -> unitState {
+                    if (state.handler()) acc else this
                 }
 
                 is InvokeTask -> object : UnitState() {
@@ -192,5 +228,5 @@ private fun State<Unit>.updateStateMachine(targetStateMachine: LinearStateMachin
 /**
  * Dsl for building a [LinearStateMachine].
  */
-fun buildLinearStateMachine(block: LinearStateMachineBuilder.() -> Unit) =
+fun buildLinearStateMachine(block: (@StateMachineDsl LinearStateMachineBuilder).() -> Unit) =
     LinearStateMachineBuilder().apply(block).build()
