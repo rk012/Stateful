@@ -1,6 +1,6 @@
 package com.outoftheboxrobotics.stateful.statemachines
 
-import com.outoftheboxrobotics.stateful.concurrent.Job
+import com.outoftheboxrobotics.stateful.concurrent.LinearJob
 import com.outoftheboxrobotics.stateful.states.State
 
 /**
@@ -12,7 +12,7 @@ import com.outoftheboxrobotics.stateful.states.State
 class LinearStateMachine<T>(
     private val initialState: State<T>,
     private val endState: State<T>
-) : StateMachine<T>(initialState), Job {
+) : StateMachine<T>(initialState), LinearJob {
     /**
      * Whether the State Machine has reached the end state.
      */

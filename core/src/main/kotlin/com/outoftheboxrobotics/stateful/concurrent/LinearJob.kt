@@ -1,6 +1,6 @@
 package com.outoftheboxrobotics.stateful.concurrent
 
-interface Job {
+interface LinearJob {
     val isFinished: Boolean
 
     fun updateJob()

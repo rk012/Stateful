@@ -1,7 +1,7 @@
 package com.outoftheboxrobotics.stateful.concurrent
 
-class Ticker : Job {
-    private val childJobs = mutableListOf<Job>()
+class Ticker : LinearJob {
+    private val childJobs = mutableListOf<LinearJob>()
 
     override var isFinished = false
 
