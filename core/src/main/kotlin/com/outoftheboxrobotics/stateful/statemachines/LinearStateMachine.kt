@@ -1,6 +1,7 @@
 package com.outoftheboxrobotics.stateful.statemachines
 
 import com.outoftheboxrobotics.stateful.concurrent.LinearJob
+import com.outoftheboxrobotics.stateful.concurrent.Ticker
 import com.outoftheboxrobotics.stateful.states.State
 
 /**
@@ -19,6 +20,10 @@ class LinearStateMachine<T>(
     override var isFinished = false
         private set
 
+    private var endStateRun = false
+
+    private val ticker = Ticker()
+
     /**
      * Creates copy of the state machine with the current state reset to the initial state.
      */
@@ -27,10 +32,15 @@ class LinearStateMachine<T>(
     override fun update() {
         if (isFinished) return
 
+        ticker.updateJob()
         super.update()
+
         if (currentState == endState) {
-            isFinished = true
-            super.update()
+            isFinished = ticker.isFinished
+            if (!endStateRun) {
+                super.update()
+                endStateRun = true
+            }
         }
     }
 

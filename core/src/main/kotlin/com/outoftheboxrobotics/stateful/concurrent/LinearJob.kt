@@ -1,7 +1,11 @@
 package com.outoftheboxrobotics.stateful.concurrent
 
-interface LinearJob {
-    val isFinished: Boolean
-
+/**
+ * Represents a completable job that can be updated.
+ */
+interface LinearJob : Awaitable {
+    /**
+     * Updates the job.
+     */
     fun updateJob()
 }
