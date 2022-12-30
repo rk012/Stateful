@@ -16,23 +16,23 @@ class StateMachineTest {
             val s2 = createState(2)
             val s3 = createState(3)
 
-            s0.onRun {
+            s0.resolveState {
                 str += value.toString()
                 s1
             }
 
-            s1.onRun {
+            s1.resolveState {
                 str += value.toString()
 
                 if (str.length == 2) s3 else s2
             }
 
-            s2.onRun {
+            s2.resolveState {
                 str += value.toString()
                 this
             }
 
-            s3.onRun {
+            s3.resolveState {
                 str += value.toString()
                 s2
             }
@@ -66,7 +66,7 @@ class StateMachineTest {
             buildStateMachine {
                 val s = createState(0)
 
-                s.onRun { this }
+                s.resolveState { this }
             }
         }
 
@@ -81,6 +81,7 @@ class StateMachineTest {
     @Suppress("RemoveExplicitTypeArguments")
     fun stateMachineMatcherTest() {
         var str = ""
+        var count = 0
 
         var temp = 25
 
@@ -90,17 +91,28 @@ class StateMachineTest {
             val g = createState(100 until 1000)
 
             // Solid or gas
-            where { it.value.last < 0 || it.value.first >= 100 } run {
+            where { it.value.last < 0 || it.value.first >= 100 } resolveState {
                 if (temp in value) this else l.also { str += "l" }
             }
 
             // Fallback to liquid
-            allStates run {
+            allStates resolveState {
                 when {
                     temp in value -> this
                     temp >= value.last -> g.also { str += 'g' }
                     else -> s.also { str += 's' }
                 }
+            }
+
+            // Increase count 2 times per update
+            repeat(2) {
+                allStates alsoRun {
+                    count++
+                }
+            }
+
+            g.alsoRun {
+                if (temp > 200) str += 'G'
             }
 
             startingState = l
@@ -112,8 +124,13 @@ class StateMachineTest {
             repeat(3) { update() }
             temp = 72
             repeat(6) { update() }
-        }
 
-        assertEquals("slgl", str)
+            assertEquals("slgl", str)
+            assertEquals(24, count)
+
+            temp = 201
+            repeat(3) { update() }
+            assertEquals("slglgGG", str)
+        }
     }
 }

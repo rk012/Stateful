@@ -12,13 +12,13 @@ class LinkedStateMachineTest {
 
         val a = buildStateMachine {
             startingState = createState(Unit).apply {
-                onRun { s += "a"; this }
+                resolveState { s += "a"; this }
             }
         }
 
         val b = buildStateMachine {
             startingState = createState(Unit).apply {
-                onRun { s += "b"; this }
+                resolveState { s += "b"; this }
             }
         }
 
