@@ -11,7 +11,7 @@ buildscript {
 
 allprojects {
     group = "io.github.rk012"
-    version = "0.1-SNAPSHOT"
+    version = "0.1"
 }
 
 subprojects {
