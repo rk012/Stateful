@@ -83,9 +83,8 @@ class LinearStateMachineBuilder internal constructor() {
      *
      * Useful for defining async scopes for structured concurrency.
      */
-    fun scope(block: (@StateMachineDsl LinearStateMachineBuilder).() -> Unit) {
-        linearStates.add(InvokeTask(buildLinearStateMachine(block)))
-    }
+    fun scope(block: (@StateMachineDsl LinearStateMachineBuilder).() -> Unit) =
+        runStateMachine(buildLinearStateMachine(block))
 
     /**
      * State that loops while the condition is true.
@@ -120,9 +119,7 @@ class LinearStateMachineBuilder internal constructor() {
      * Shorthand for `launch(buildLinearStateMachine {...})`
      */
     fun launch(block: (@StateMachineDsl LinearStateMachineBuilder).() -> Unit): Awaitable =
-        buildLinearStateMachine(block).also {
-            linearStates.add(LaunchTask(it))
-        }
+        launch(buildLinearStateMachine(block))
 
     /**
      * Waits for the given awaitable to finish before continuing.

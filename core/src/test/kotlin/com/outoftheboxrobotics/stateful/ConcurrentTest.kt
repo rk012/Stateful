@@ -10,20 +10,20 @@ class ConcurrentTest {
         var s = ""
         buildLinearStateMachine {
             scope {
-                launch(buildLinearStateMachine {
+                launch{
                     waitMillis(50)
                     task { s += "2" }
-                })
+                }
 
                 task { s += "1" }
             }
 
             task { s += "3" }
 
-            launch(buildLinearStateMachine {
+            launch {
                 waitMillis(50)
                 task { s += "4" }
-            })
+            }
         }.run {
             while (!isFinished) { update() }
             assertEquals("1234", s)
