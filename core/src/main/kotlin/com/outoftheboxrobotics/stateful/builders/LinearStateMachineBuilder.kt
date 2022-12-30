@@ -6,10 +6,15 @@ import com.outoftheboxrobotics.stateful.states.State
 import com.outoftheboxrobotics.stateful.states.StateDataHandler
 import com.outoftheboxrobotics.stateful.states.UnitState
 
+
+@DslMarker
+@Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
+private annotation class LinearStateMachineDsl
+
 /**
  * Dsl builder for creating a [LinearStateMachine].
  */
-@StateMachineDsl
+@LinearStateMachineDsl
 class LinearStateMachineBuilder internal constructor() {
     private sealed interface LinearState
     private data class LinearTask(val task: () -> Unit) : LinearState
@@ -31,11 +36,11 @@ class LinearStateMachineBuilder internal constructor() {
     class ConditionalTask internal constructor(
         internal val conditions: MutableList<Pair<() -> Boolean, LinearStateMachine<Unit>>> = mutableListOf()
     ) : LinearState {
-        fun elif(condition: () -> Boolean, block: (@StateMachineDsl LinearStateMachineBuilder).() -> Unit) = apply {
+        fun elif(condition: () -> Boolean, block: (@LinearStateMachineDsl LinearStateMachineBuilder).() -> Unit) = apply {
             conditions.add(condition to buildLinearStateMachine(block))
         }
 
-        infix fun elseRun(block: (@StateMachineDsl LinearStateMachineBuilder).() -> Unit) {
+        infix fun elseRun(block: (@LinearStateMachineDsl LinearStateMachineBuilder).() -> Unit) {
             conditions.add({ true } to buildLinearStateMachine(block))
         }
     }
@@ -83,13 +88,13 @@ class LinearStateMachineBuilder internal constructor() {
      *
      * Useful for defining async scopes for structured concurrency.
      */
-    fun scope(block: (@StateMachineDsl LinearStateMachineBuilder).() -> Unit) =
+    fun scope(block: (@LinearStateMachineDsl LinearStateMachineBuilder).() -> Unit) =
         runStateMachine(buildLinearStateMachine(block))
 
     /**
      * State that loops while the condition is true.
      */
-    fun loopWhile(condition: () -> Boolean, body: (@StateMachineDsl LinearStateMachineBuilder).() -> Unit) {
+    fun loopWhile(condition: () -> Boolean, body: (@LinearStateMachineDsl LinearStateMachineBuilder).() -> Unit) {
         linearStates.add(LoopTask(condition, buildLinearStateMachine(body)))
     }
 
@@ -103,7 +108,7 @@ class LinearStateMachineBuilder internal constructor() {
     /**
      * State builder for conditional execution (if statements).
      */
-    fun runIf(condition: () -> Boolean, block: (@StateMachineDsl LinearStateMachineBuilder).() -> Unit) =
+    fun runIf(condition: () -> Boolean, block: (@LinearStateMachineDsl LinearStateMachineBuilder).() -> Unit) =
         ConditionalTask(mutableListOf(condition to buildLinearStateMachine(block))).also {
             linearStates.add(it)
         }
@@ -118,7 +123,7 @@ class LinearStateMachineBuilder internal constructor() {
     /**
      * Shorthand for `launch(buildLinearStateMachine {...})`
      */
-    fun launch(block: (@StateMachineDsl LinearStateMachineBuilder).() -> Unit): Awaitable =
+    fun launch(block: (@LinearStateMachineDsl LinearStateMachineBuilder).() -> Unit): Awaitable =
         launch(buildLinearStateMachine(block))
 
     /**
@@ -225,5 +230,5 @@ private fun State<Unit>.updateStateMachine(targetStateMachine: LinearStateMachin
 /**
  * Dsl for building a [LinearStateMachine].
  */
-fun buildLinearStateMachine(block: (@StateMachineDsl LinearStateMachineBuilder).() -> Unit) =
+fun buildLinearStateMachine(block: (@LinearStateMachineDsl LinearStateMachineBuilder).() -> Unit) =
     LinearStateMachineBuilder().apply(block).build()

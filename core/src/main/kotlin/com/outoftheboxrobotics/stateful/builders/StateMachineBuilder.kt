@@ -4,6 +4,11 @@ import com.outoftheboxrobotics.stateful.states.State
 import com.outoftheboxrobotics.stateful.statemachines.StateMachine
 import com.outoftheboxrobotics.stateful.states.StateRef
 
+
+@DslMarker
+@Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
+private annotation class StateMachineDsl
+
 /**
  * Dsl builder for creating a [StateMachine].
  */
